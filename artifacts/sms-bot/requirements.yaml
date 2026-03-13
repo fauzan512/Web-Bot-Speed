@@ -1,0 +1,13 @@
+packages:
+  "framer-motion": "Smooth animations for logs and layout transitions"
+  "date-fns": "Easy date formatting for logs and order timestamps"
+  "clsx": "Classname utility"
+  "tailwind-merge": "Tailwind class merging"
+  "lucide-react": "Icons for UI"
+
+images: []
+
+notes:
+  - "The app uses x-api-key header for all authenticated requests"
+  - "API calls are made using the generated customFetch wrappers from @workspace/api-client-react"
+  - "Web Audio API is used for the success beep sound, requiring no external assets"

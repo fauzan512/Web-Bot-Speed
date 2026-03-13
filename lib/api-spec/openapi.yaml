@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Hero SMS Bot API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: hero
+    description: Hero SMS operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,122 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /balance:
+    get:
+      operationId: getBalance
+      tags: [hero]
+      summary: Get account balance
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Balance response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceResponse"
+  /prices:
+    get:
+      operationId: getPrices
+      tags: [hero]
+      summary: Get number prices
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: service
+          in: query
+          schema:
+            type: string
+            default: "wa"
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Price info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceResponse"
+  /buy:
+    post:
+      operationId: buyNumber
+      tags: [hero]
+      summary: Buy a phone number
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BuyRequest"
+      responses:
+        "200":
+          description: Buy result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuyResponse"
+  /status/{id}:
+    get:
+      operationId: getStatus
+      tags: [hero]
+      summary: Get order status / OTP
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+  /cancel/{id}:
+    post:
+      operationId: cancelNumber
+      tags: [hero]
+      summary: Cancel a number order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cancel result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +150,79 @@ components:
           type: string
       required:
         - status
-
+    BalanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        balance:
+          type: number
+        error:
+          type: string
+      required:
+        - success
+    PriceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        cost:
+          type: number
+          nullable: true
+        count:
+          type: integer
+        error:
+          type: string
+      required:
+        - success
+        - count
+    BuyRequest:
+      type: object
+      properties:
+        country:
+          type: string
+        service:
+          type: string
+          default: "wa"
+        maxPrice:
+          type: string
+        operator:
+          type: string
+          default: "0"
+      required:
+        - country
+    BuyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        orderId:
+          type: string
+        phone:
+          type: string
+        error:
+          type: string
+      required:
+        - success
+    StatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+        error:
+          type: string
+      required:
+        - success
+    CancelResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        result:
+          type: string
+        error:
+          type: string
+      required:
+        - success

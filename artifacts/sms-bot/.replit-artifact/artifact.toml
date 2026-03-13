@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Hero SMS Bot"
+version = "1.0.0"
+id = "artifacts/sms-bot"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 19532
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/sms-bot run dev"
+
+[services.env]
+PORT = "19532"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/sms-bot", "run", "build"]
+publicDir = "artifacts/sms-bot/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
