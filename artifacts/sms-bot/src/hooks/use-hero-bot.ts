@@ -32,22 +32,6 @@ function makePostHeaders(apiKey: string): RequestInit {
   return { headers: { "x-api-key": apiKey, "Content-Type": "application/json" } };
 }
 
-function playSuccessSound() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
-  } catch {}
-}
-
 export function useHeroBot(apiKey: string | null) {
   const [mode, setMode] = useState<Mode>("mexico");
   const [isRunning, setIsRunning] = useState(false);
@@ -60,6 +44,10 @@ export function useHeroBot(apiKey: string | null) {
 
   const [buyCount, setBuyCount] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
+
+  // Looping notification state
+  const [notifPlaying, setNotifPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [purchased, setPurchased] = useState<PurchasedNumber[]>(() => {
     try {
@@ -89,6 +77,34 @@ export function useHeroBot(apiKey: string | null) {
     );
   }, [purchased]);
 
+  // Setup audio element once
+  useEffect(() => {
+    const audio = new Audio("/notif.mp3");
+    audio.loop = true;
+    audio.volume = 0.8;
+    audioRef.current = audio;
+    return () => {
+      audio.pause();
+      audio.src = "";
+    };
+  }, []);
+
+  const playLoopingNotif = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    setNotifPlaying(true);
+  }, []);
+
+  const stopNotif = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    setNotifPlaying(false);
+  }, []);
+
   const addLog = useCallback((type: LogEntry["type"], message: string) => {
     setLogs((prev) => {
       const next = [
@@ -106,6 +122,14 @@ export function useHeroBot(apiKey: string | null) {
     setIsRunning(false);
     addLog("stop", "Bot dihentikan oleh user.");
   }, [addLog]);
+
+  const deletePurchased = useCallback((orderId: string) => {
+    setPurchased((prev) => prev.filter((n) => n.orderId !== orderId));
+  }, []);
+
+  const deleteAll = useCallback(() => {
+    setPurchased([]);
+  }, []);
 
   const runMexicoLoop = useCallback(async () => {
     if (!apiKey) return;
@@ -149,6 +173,7 @@ export function useHeroBot(apiKey: string | null) {
             localBuy++;
             setBuyCount(localBuy);
             addLog("success", `Berhasil: +${res.phone} (#${res.orderId})`);
+            playLoopingNotif();
             setPurchased((prev) => [
               {
                 orderId: res.orderId!,
@@ -189,7 +214,7 @@ export function useHeroBot(apiKey: string | null) {
     }
 
     setIsRunning(false);
-  }, [apiKey, mxParallel, mxDelay, addLog]);
+  }, [apiKey, mxParallel, mxDelay, addLog, playLoopingNotif]);
 
   const runPhilippinesLoop = useCallback(async () => {
     if (!apiKey) return;
@@ -229,6 +254,7 @@ export function useHeroBot(apiKey: string | null) {
             localBuy++;
             setBuyCount(localBuy);
             addLog("success", `Berhasil: +${res.phone} (#${res.orderId})`);
+            playLoopingNotif();
             setPurchased((prev) => [
               {
                 orderId: res.orderId!,
@@ -268,7 +294,7 @@ export function useHeroBot(apiKey: string | null) {
 
     addLog("stop", "Tugas selesai atau dihentikan.");
     setIsRunning(false);
-  }, [apiKey, phQty, phDelay, addLog]);
+  }, [apiKey, phQty, phDelay, addLog, playLoopingNotif]);
 
   const handleStart = useCallback(() => {
     if (mode === "mexico") runMexicoLoop();
@@ -315,7 +341,6 @@ export function useHeroBot(apiKey: string | null) {
           if (res.success && res.status) {
             if (res.status.startsWith("STATUS_OK:")) {
               const code = res.status.split(":")[1];
-              playSuccessSound();
               addLog("otp", `OTP DITERIMA [${order.phone}]: ${code}`);
               setPurchased((prev) =>
                 prev.map((n) =>
@@ -354,8 +379,12 @@ export function useHeroBot(apiKey: string | null) {
     clearLogs,
     purchased,
     handleCancel,
+    deletePurchased,
+    deleteAll,
     buyCount,
     retryCount,
+    notifPlaying,
+    stopNotif,
     settings: {
       mxParallel,
       setMxParallel,
