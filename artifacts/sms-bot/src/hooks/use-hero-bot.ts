@@ -92,6 +92,7 @@ export function useHeroBot(apiKey: string | null) {
   const playLoopingNotif = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    if (!audio.paused) return;
     audio.currentTime = 0;
     audio.play().catch(() => {});
     setNotifPlaying(true);
