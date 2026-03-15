@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "bdWHnKYYvucYUBVNQyPUR"
+uri = "file://hero-sms-bot.zip"
+type = "unspecified"
+title = "Hero SMS Bot - Project ZIP"
